@@ -1,0 +1,29 @@
+From 8a8b80dffb00c6421fda1b744612a58d25e3f9dc Mon Sep 17 00:00:00 2001
+From: Ted Ross <tross@apache.org>
+Date: Wed, 19 May 2010 13:33:53 +0000
+Subject: [PATCH 03/11] Added missing method for ObjectId.
+
+git-svn-id: https://svn.apache.org/repos/asf/qpid/trunk@946180 13f79535-47bb-0310-9956-ffa450edef68
+---
+ qpid/extras/qmf/src/py/qmf/console.py |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/qpid/extras/qmf/src/py/qmf/console.py b/qpid/extras/qmf/src/py/qmf/console.py
+index b91a754..8b7aeaa 100644
+--- a/qpid/extras/qmf/src/py/qmf/console.py
++++ b/qpid/extras/qmf/src/py/qmf/console.py
+@@ -1817,6 +1817,11 @@ class ObjectId:
+   def getAgentBank(self):
+     return self.agentName
+ 
++  def getV2RoutingKey(self):
++    if self.agentName == '0':
++      return "broker"
++    return self.agentName
++
+   def getObject(self):
+     return self.objectName
+ 
+-- 
+1.7.0.1
+

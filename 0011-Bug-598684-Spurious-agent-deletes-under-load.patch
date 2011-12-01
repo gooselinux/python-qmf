@@ -1,0 +1,38 @@
+From 99e4e42163a646c9b2c5505c4f4f98628ab103ce Mon Sep 17 00:00:00 2001
+From: Kenneth A. Giusti <kgiusti@apache.com>
+Date: Mon, 28 Jun 2010 19:44:41 +0000
+Subject: [PATCH 11/11] Bug 598684 - Spurious agent deletes under load
+
+QPID-2663: fix parameter name misspelling [found by tross]
+
+git-svn-id: https://svn.apache.org/repos/asf/qpid/trunk@958691 13f79535-47bb-0310-9956-ffa450edef68
+(cherry picked from commit a46012bd23c96b4d40e69eb18fa108669ecc0c32)
+---
+ qpid/extras/qmf/src/py/qmf/console.py |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/qpid/extras/qmf/src/py/qmf/console.py b/qpid/extras/qmf/src/py/qmf/console.py
+index 062cb6f..57e9924 100644
+--- a/qpid/extras/qmf/src/py/qmf/console.py
++++ b/qpid/extras/qmf/src/py/qmf/console.py
+@@ -675,7 +675,7 @@ class Session:
+         broker.amqpSession.exchange_bind(exchange="qpid.management", queue=broker.topicName, binding_key=v1key)
+         if broker.brokerSupportsV2:
+           # data indications should arrive on the lo priority queue
+-          broker.amqpSession.exchange_bind(exchange="qmf.default.topic", queue=broker.v2_topic_queue_lo, bindingkey=v2key)
++          broker.amqpSession.exchange_bind(exchange="qmf.default.topic", queue=broker.v2_topic_queue_lo, binding_key=v2key)
+ 
+ 
+   def bindClass(self, pname, cname):
+@@ -691,7 +691,7 @@ class Session:
+         broker.amqpSession.exchange_bind(exchange="qpid.management", queue=broker.topicName, binding_key=v1key)
+         if broker.brokerSupportsV2:
+           # data indications should arrive on the lo priority queue
+-          broker.amqpSession.exchange_bind(exchange="qmf.default.topic", queue=broker.v2_topic_queue_lo, bindingkey=v2key)
++          broker.amqpSession.exchange_bind(exchange="qmf.default.topic", queue=broker.v2_topic_queue_lo, binding_key=v2key)
+ 
+       
+   def bindClassKey(self, classKey):
+-- 
+1.7.0.1
+

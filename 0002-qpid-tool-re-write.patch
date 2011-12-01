@@ -1,0 +1,122 @@
+From 5f52a16f0400a62ab96d9c79208ede76245a1ccd Mon Sep 17 00:00:00 2001
+From: Ted Ross <tross@apache.org>
+Date: Wed, 19 May 2010 13:26:01 +0000
+Subject: [PATCH 02/11] qpid-tool re-write:
+   1) No longer uses the (really) old API
+   2) Handles the new QMFv2 functionality
+
+git-svn-id: https://svn.apache.org/repos/asf/qpid/trunk@946178 13f79535-47bb-0310-9956-ffa450edef68
+---
+ qpid/extras/qmf/src/py/qmf/console.py |   36 ++++++++++++++++++++++++--------
+ 1 files changed, 27 insertions(+), 9 deletions(-)
+
+diff --git a/qpid/extras/qmf/src/py/qmf/console.py b/qpid/extras/qmf/src/py/qmf/console.py
+index d7d9344..b91a754 100644
+--- a/qpid/extras/qmf/src/py/qmf/console.py
++++ b/qpid/extras/qmf/src/py/qmf/console.py
+@@ -247,14 +247,16 @@ class Object(object):
+ 
+   def getIndex(self):
+     """ Return a string describing this object's primary key. """
++    if self._objectId.isV2:
++      return self._objectId.getObject()
+     result = u""
+-    for property, value in self._properties:
+-      if property.index:
++    for prop, value in self._properties:
++      if prop.index:
+         if result != u"":
+           result += u":"
+         try:
+-          valstr = unicode(self._session._displayValue(value, property.type))
+-        except:
++          valstr = unicode(self._session._displayValue(value, prop.type))
++        except Exception, e:
+           valstr = u"<undecodable>"
+         result += valstr
+     return result
+@@ -1055,7 +1057,10 @@ class Session:
+       values = content["_values"]
+       timestamp = values["timestamp"]
+       interval = values["heartbeat_interval"]
+-    except:
++      epoch = 0
++      if 'epoch' in values:
++        epoch = values['epoch']
++    except Exception,e:
+       return
+ 
+     ##
+@@ -1070,6 +1075,7 @@ class Session:
+     agent = broker.getAgent(1, agentName)
+     if agent == None:
+       agent = Agent(broker, agentName, "QMFv2 Agent", True, interval)
++      agent.setEpoch(epoch)
+       broker._addAgent(agentName, agent)
+     else:
+       agent.touch()
+@@ -1304,7 +1310,7 @@ class Session:
+         sendCodec = Codec()
+         seq = self.seqMgr._reserve((method, False))
+ 
+-        if objectId.isV2():
++        if objectId.isV2:
+           #
+           # Compose and send a QMFv2 method request
+           #
+@@ -1752,6 +1758,7 @@ class ObjectId:
+   """ Object that represents QMF object identifiers """
+   def __init__(self, constructor, first=0, second=0, agentName=None):
+     if  constructor.__class__ == dict:
++      self.isV2 = True
+       self.agentName = agentName
+       self.agentEpoch = 0
+       if '_agent_name' in constructor:  self.agentName = constructor['_agent_name']
+@@ -1760,6 +1767,7 @@ class ObjectId:
+         raise Exception("QMFv2 OBJECT_ID must have the '_object_name' field.")
+       self.objectName = constructor['_object_name']
+     else:
++      self.isV2 = None
+       if not constructor:
+         first = first
+         second = second
+@@ -1794,9 +1802,6 @@ class ObjectId:
+     return "%d-%d-%d-%s-%s" % (self.getFlags(), self.getSequence(),
+                                self.getBrokerBank(), self.getAgentBank(), self.getObject())
+ 
+-  def isV2(self):
+-    return not self.agentName.isdigit()
+-
+   def index(self):
+     return self.__repr__()
+ 
+@@ -2463,6 +2468,7 @@ class Agent:
+     self.unsolicitedContext = RequestContext(self, self)
+     self.lastSeenTime = time()
+     self.closed = None
++    self.epoch = 0
+ 
+ 
+   def _checkClosed(self):
+@@ -2489,6 +2495,18 @@ class Agent:
+     self.lastSeenTime = time()
+ 
+ 
++  def setEpoch(self, epoch):
++    self.epoch = epoch
++
++
++  def epochMismatch(self, epoch):
++    if epoch == 0 or self.epoch == 0:
++      return None
++    if epoch == self.epoch:
++      return None
++    return True
++
++
+   def isOld(self):
+     if self.heartbeatInterval == 0:
+       return None
+-- 
+1.7.0.1
+

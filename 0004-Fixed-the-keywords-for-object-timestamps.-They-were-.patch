@@ -1,0 +1,30 @@
+From e5eb14146eba0e1718e4feec27fc90e4e227f36e Mon Sep 17 00:00:00 2001
+From: Ted Ross <tross@apache.org>
+Date: Fri, 21 May 2010 13:22:59 +0000
+Subject: [PATCH 04/11] Fixed the keywords for object timestamps.  They were missing the initial underscore.
+
+git-svn-id: https://svn.apache.org/repos/asf/qpid/trunk@947000 13f79535-47bb-0310-9956-ffa450edef68
+---
+ qpid/extras/qmf/src/py/qmf/console.py |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/qpid/extras/qmf/src/py/qmf/console.py b/qpid/extras/qmf/src/py/qmf/console.py
+index 8b7aeaa..d6b0ef0 100644
+--- a/qpid/extras/qmf/src/py/qmf/console.py
++++ b/qpid/extras/qmf/src/py/qmf/console.py
+@@ -197,9 +197,9 @@ class Object(object):
+     else:
+       self._objectId = None
+ 
+-    self._currentTime = omap.get("update_ts", 0)
+-    self._createTime = omap.get("create_ts", 0)
+-    self._deleteTime = omap.get("delete_ts", 0)
++    self._currentTime = omap.get("_update_ts", 0)
++    self._createTime = omap.get("_create_ts", 0)
++    self._deleteTime = omap.get("_delete_ts", 0)
+ 
+   def getAgent(self):
+     """ Return the agent from which this object was sent """
+-- 
+1.7.0.1
+

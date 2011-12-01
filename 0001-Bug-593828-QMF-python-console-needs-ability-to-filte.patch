@@ -1,0 +1,122 @@
+From a15f49f58cdb1ee2906f03bb487cf40c43498238 Mon Sep 17 00:00:00 2001
+From: Kenneth Anthony Giusti <kgiusti@apache.org>
+Date: Thu, 20 May 2010 21:42:40 +0000
+Subject: [PATCH 01/11] Bug 593828 - QMF: python console needs ability to filter unsolicited events.
+ QMF: provide event filter api for python console
+
+git-svn-id: https://svn.apache.org/repos/asf/qpid/trunk@946801 13f79535-47bb-0310-9956-ffa450edef68
+(cherry picked from commit b806ee99fb0224069ba628bc0c506e02bb227de2)
+---
+ qpid/extras/qmf/src/py/qmf/console.py |   83 ++++++++++++++++++++++++++++++--
+ 1 files changed, 77 insertions(+), 6 deletions(-)
+
+diff --git a/qpid/extras/qmf/src/py/qmf/console.py b/qpid/extras/qmf/src/py/qmf/console.py
+index fc301fe..d7d9344 100644
+--- a/qpid/extras/qmf/src/py/qmf/console.py
++++ b/qpid/extras/qmf/src/py/qmf/console.py
+@@ -799,17 +799,85 @@ class Session:
+     return request.result
+ 
+ 
+-  def setEventFilter(self, **kwargs):
+-    """ """
+-    pass
++  def addEventFilter(self, **kwargs):
++    """Filter unsolicited events based on package and event name.
++    QMF v2 also can filter on vendor, product, and severity values.
++
++    By default, a console receives unsolicted events by binding to:
++
++        qpid.management/console.event.#  (v1)
++
++        qmf.default.topic/agent.ind.event.#  (v2)
++
++    A V1 event filter binding uses the pattern:
++
++        qpid.management/console.event.*.*[.<package>[.<event>]].#
++
++    A V2 event filter binding uses the pattern:
++
++        qmf.default.topic/agent.ind.event.<Vendor|*>.<Product|*>.<severity|*>.<package|*>.<event|*>.#
++    """
++    package = kwargs.get("package", "*")
++    event = kwargs.get("event", "*")
++    vendor = kwargs.get("vendor", "*")
++    product = kwargs.get("product", "*")
++    severity = kwargs.get("severity", "*")
++
++    if package is "*" and event is not "*":
++      raise Exception("'package' parameter required if 'event' parameter"
++                      " supplied")
++
++    # V1 key - can only filter on package (and event)
++    if package is not "*":
++      key = "console.event.*.*." + str(package)
++      if event is not "*":
++        key += "." + str(event)
++      key += ".#"
++
++      if key not in self.v1BindingKeyList:
++        self.v1BindingKeyList.append(key)
++        try:
++          # remove default wildcard binding
++          self.v1BindingKeyList.remove("console.event.#")
++        except:
++          pass
++
++    # V2 key - escape any "." in the filter strings
++
++    key = "agent.ind.event." + str(vendor).replace(".", "_") \
++        + "." + str(product).replace(".", "_") \
++        + "." + str(severity).replace(".", "_") \
++        + "." + str(package).replace(".", "_") \
++        + "." + str(event).replace(".", "_") + ".#"
++
++    if key not in self.v2BindingKeyList:
++      self.v2BindingKeyList.append(key)
++      try:
++        # remove default wildcard binding
++        self.v2BindingKeyList.remove("agent.ind.event.#")
++      except:
++        pass
+ 
+   def addAgentFilter(self, vendor, product=None):
++    """Deprecate - use heartbeat filter instead"""
++    self.addHeartbeatFilter(vendor=vendor, product=product)
++
++  def addHeartbeatFilter(self, **kwargs):
+     """ Listen for heartbeat messages only for those agent(s) that match the
+     vendor and, optionally, the product strings.
+     """
+-    key = "agent.ind.heartbeat." + vendor
++    vendor = kwargs.get("vendor")
++    product = kwargs.get("product")
++    if vendor is None:
++      raise Exception("vendor parameter required!")
++
++    # V1 heartbeats do not have any agent identifier - we cannot
++    # filter them by agent.
++
++    # build the binding key - escape "."s...
++    key = "agent.ind.heartbeat." + str(vendor).replace(".", "_")
+     if product is not None:
+-      key += "." + product
++      key += "." + str(product).replace(".", "_")
+     key += ".#"
+ 
+     if key not in self.v2BindingKeyList:
+@@ -828,7 +896,10 @@ class Session:
+       pass
+ 
+   def _bindingKeys(self):
+-    """ The set of default key bindings."""
++    """ Construct the initial set of default key bindings.  These keys can be
++    overridden using the add{Event,Heartbeat}Filter() api calls _prior_ to
++    adding a broker with addBroker()
++    """
+     v1KeyList = []
+     v2KeyList = []
+     v1KeyList.append("schema.#")
+-- 
+1.7.0.1
+

@@ -1,0 +1,41 @@
+From 259815d9d0a4f43f4eddc738bb78d41f70d593b3 Mon Sep 17 00:00:00 2001
+From: Kenneth Anthony Giusti <kgiusti@apache.org>
+Date: Thu, 17 Jun 2010 22:04:24 +0000
+Subject: [PATCH 09/11] Bug 604326 - Collector object is slow to appear
+
+QPID-2677: send agent locate req after binding to agent.ind.data
+
+git-svn-id: https://svn.apache.org/repos/asf/qpid/trunk@955762 13f79535-47bb-0310-9956-ffa450edef68
+(cherry picked from commit 60ddf89027817f0f7860c7d9f86af161ac540bc8)
+---
+ qpid/extras/qmf/src/py/qmf/console.py |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/qpid/extras/qmf/src/py/qmf/console.py b/qpid/extras/qmf/src/py/qmf/console.py
+index e7a89fb..af7a895 100644
+--- a/qpid/extras/qmf/src/py/qmf/console.py
++++ b/qpid/extras/qmf/src/py/qmf/console.py
+@@ -2147,8 +2147,6 @@ class Broker(Thread):
+       self._setHeader(codec, 'B')
+       msg = self._message(codec.encoded)
+       self._send(msg)
+-      if self.brokerSupportsV2:
+-        self._v2SendAgentLocate()
+ 
+       return True  # connection complete
+ 
+@@ -2341,6 +2339,11 @@ class Broker(Thread):
+               self.amqpSession.exchange_bind(exchange="qmf.default.topic",
+                                              queue=self.v2_topic_queue_lo,
+                                              binding_key=key)
++          # solicit an agent locate now, after we bind to agent.ind.data,
++          # because the agent locate will cause the agent to publish a
++          # data indication - and now we're able to receive it!
++          self._v2SendAgentLocate()
++
+ 
+       if self.reqsOutstanding == 0 and self.syncInFlight:
+         self.syncInFlight = False
+-- 
+1.7.0.1
+
